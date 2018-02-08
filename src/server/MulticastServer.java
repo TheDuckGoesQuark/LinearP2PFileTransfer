@@ -1,31 +1,13 @@
 package server;
 
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
 
-public class Server {
+public class MulticastServer {
+
+    static final String FILE_NAME = "helloworld.txt";
 
     public static void main(String[] args) throws IOException {
-        // Set up server socket
-        ServerSocket serverSocket = new ServerSocket(15123);
-        // Wait for accepting client
-        Socket socket = serverSocket.accept();
-        System.out.println("Accepted connection: " + socket);
-        // Retrieve file to send
-        File transferFile = new File("helloworld.txt");
-        byte[] byteArray = new byte[(int) transferFile.length()];
-        FileInputStream fin = new FileInputStream(transferFile);
-        BufferedInputStream bin = new BufferedInputStream(fin);
-        bin.read(byteArray, 0, byteArray.length);
-        // Set up channel of communication with client
-        OutputStream os = socket.getOutputStream();
-        System.out.println("Sending Files...");
-        // Write data to output stream
-        os.write(byteArray, 0, byteArray.length);
-        os.flush();
-        // Close
-        socket.close();
-        System.out.println("File transfer complete.");
+        TestFileWriter.writeTestFile(FILE_NAME, 10);
+        new MulticastServerThread().start();
     }
 }
