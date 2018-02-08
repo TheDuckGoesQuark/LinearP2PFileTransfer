@@ -1,4 +1,4 @@
-package server;
+package multicast.server;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;

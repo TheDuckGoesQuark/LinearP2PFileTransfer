@@ -1,4 +1,4 @@
-package client;
+package sftp;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
@@ -12,10 +12,10 @@ public class Client {
         int bytesRead; // Number of bytes read from input channel
         int currentTot; //
 
-        Socket socket = new Socket("138.251.29.244 ",15123); // Connects to local ip on same port as server
+        Socket socket = new Socket("138.251.28.4",15123); // Connects to local ip on same port as multicast.server
         byte [] bytearray = new byte [filesize];
         InputStream is = socket.getInputStream();
-        FileOutputStream fos = new FileOutputStream("copy.txt"); // Save input file to this location
+        FileOutputStream fos = new FileOutputStream("/cs/scratch/jm354/copy.txt"); // Save input file to this location
         BufferedOutputStream bos = new BufferedOutputStream(fos);
         bytesRead = is.read(bytearray,0,bytearray.length);
         currentTot = bytesRead;

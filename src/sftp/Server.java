@@ -1,4 +1,4 @@
-package server;
+package sftp;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -7,9 +7,9 @@ import java.net.Socket;
 public class Server {
 
     public static void main(String[] args) throws IOException {
-        // Set up server socket
+        // Set up multicast.server socket
         ServerSocket serverSocket = new ServerSocket(15123);
-        // Wait for accepting client
+        // Wait for accepting multicast.client
         Socket socket = serverSocket.accept();
         System.out.println("Accepted connection: " + socket);
         // Retrieve file to send
@@ -18,7 +18,7 @@ public class Server {
         FileInputStream fin = new FileInputStream(transferFile);
         BufferedInputStream bin = new BufferedInputStream(fin);
         bin.read(byteArray, 0, byteArray.length);
-        // Set up channel of communication with client
+        // Set up channel of communication with multicast.client
         OutputStream os = socket.getOutputStream();
         System.out.println("Sending Files...");
         // Write data to output stream
