@@ -8,24 +8,24 @@ import java.net.Socket;
 
 public class Client {
     public static void main(String[] args) throws IOException {
-        int filesize = 2022386; // File size/buffer size
+        int fileSize = 2022386; // File size/buffer size
         int bytesRead; // Number of bytes read from input channel
         int currentTot; //
 
-        Socket socket = new Socket("138.251.28.4",15123); // Connects to local ip on same port as multicast.server
-        byte [] bytearray = new byte [filesize];
+        Socket socket = new Socket(NodeUtil.SERVER_ADDRESS,NodeUtil.SERVER_PORT); // Connects to local ip on same port as server
+        byte [] byteArray = new byte [fileSize];
         InputStream is = socket.getInputStream();
         FileOutputStream fos = new FileOutputStream("/cs/scratch/jm354/copy.txt"); // Save input file to this location
         BufferedOutputStream bos = new BufferedOutputStream(fos);
-        bytesRead = is.read(bytearray,0,bytearray.length);
+        bytesRead = is.read(byteArray,0,byteArray.length);
         currentTot = bytesRead;
 
         do {
-            bytesRead = is.read(bytearray, currentTot, (bytearray.length-currentTot));
+            bytesRead = is.read(byteArray, currentTot, (byteArray.length-currentTot));
             if(bytesRead >= 0) currentTot += bytesRead;
         } while(bytesRead > -1);
 
-        bos.write(bytearray, 0 , currentTot);
+        bos.write(byteArray, 0 , currentTot);
         bos.flush();
         bos.close();
         socket.close();

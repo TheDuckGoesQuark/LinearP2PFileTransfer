@@ -58,10 +58,10 @@ public class MulticastServerThread extends QuoteServerThread {
                 buf = dString.getBytes();
 
                 // send it
-                InetAddress group = InetAddress.getByName("230.0.0.1");
+                InetAddress group = InetAddress.getByName("224.0.0.1");
                 DatagramPacket packet = new DatagramPacket(buf, buf.length, group, 4446);
                 socket.send(packet);
-
+                System.out.println("Sent "+dString);
                 // sleep for a while
                 try {
                     sleep((long)(Math.random() * FIVE_SECONDS));

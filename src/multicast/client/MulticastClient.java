@@ -35,29 +35,51 @@ package multicast.client;
 import java.io.*;
 import java.net.*;
 
-public class MulticastClient {
+public class MulticastClient extends Thread {
 
-    public static void main(String[] args) throws IOException {
+    protected MulticastSocket socket = null;
+    protected byte[] buf = new byte[256];
 
-        MulticastSocket socket = new MulticastSocket(4446);
-        InetAddress address = InetAddress.getByName("230.0.0.1");
-        socket.joinGroup(address);
-
-        DatagramPacket packet;
-
-        // get a few quotes
-        for (int i = 0; i < 5; i++) {
-
-            byte[] buf = new byte[256];
-            packet = new DatagramPacket(buf, buf.length);
-            socket.receive(packet);
-
-            String received = new String(packet.getData(), 0, packet.getLength());
-            System.out.println("Quote of the Moment: " + received);
-        }
-
-        socket.leaveGroup(address);
-        socket.close();
+    public static void main(String[] args) {
+        new MulticastClient().run();
     }
 
+    public void run()  {
+        try {
+            socket = new MulticastSocket(4446);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        InetAddress group = null;
+        try {
+            group = InetAddress.getByName("230.0.0.0");
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        try {
+            socket.joinGroup(group);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        while (true) {
+            DatagramPacket packet = new DatagramPacket(buf, buf.length);
+            try {
+                socket.receive(packet);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            String received = new String(
+                    packet.getData(), 0, packet.getLength());
+            if ("end".equals(received)) {
+                break;
+            }
+        }
+        try {
+            socket.leaveGroup(group);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        socket.close();
+    }
 }
+

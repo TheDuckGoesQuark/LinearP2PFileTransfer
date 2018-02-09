@@ -1,5 +1,6 @@
 package sftp;
 
+import javax.xml.soap.Node;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -8,7 +9,8 @@ public class Server {
 
     public static void main(String[] args) throws IOException {
         // Set up multicast.server socket
-        ServerSocket serverSocket = new ServerSocket(15123);
+        ServerSocket serverSocket = new ServerSocket(NodeUtil.SERVER_PORT);
+
         // Wait for accepting multicast.client
         Socket socket = serverSocket.accept();
         System.out.println("Accepted connection: " + socket);
@@ -27,5 +29,6 @@ public class Server {
         // Close
         socket.close();
         System.out.println("File transfer complete.");
+
     }
 }

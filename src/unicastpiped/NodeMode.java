@@ -1,5 +1,6 @@
 package unicastpiped;
 
-public enum Modes {
-    LISTENING, DISTRIBUTE
+public enum NodeMode {
+    DISTRIBUTE,
+    LISTENING
 }
