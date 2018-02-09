@@ -37,15 +37,17 @@ public class Node {
         Socket socket = serverSocket.accept();
         // Once found...
         OutputStream out = socket.getOutputStream();
-        //DataOutputStream dout = new DataOutputStream(out);
+        // send file meta data
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
         FileInfoMessage fileInfoMessage = new FileInfoMessage(file.length(), fileName);
         System.out.println(fileInfoMessage.getFilelength());
         System.out.println(fileInfoMessage.getFilename());
         objectOutputStream.writeObject(fileInfoMessage);
-        socket.close();
-        //now send the file contents
-/*        long numSent = 0;
+
+        // send the file contents
+        DataOutputStream dout = new DataOutputStream(out);
+        long numSent = 0;
+        long numToSend = fileInfoMessage.getFilelength();
         while (numSent < numToSend) {
             long numThisTime = numToSend - numSent;
             numThisTime = numThisTime < bytes.length ? numThisTime : bytes.length;
@@ -53,12 +55,12 @@ public class Node {
             if (numRead == -1) break;
             dout.write(bytes, 0, numRead);
             numSent += numRead;
-        }*/
+        }
+        socket.close();
+
     }
 
     private void listenForFile() throws IOException, ClassNotFoundException {
-        String filename;
-        long fileSize; // File size
         int bytesRead; // Number of bytes read from input channel
         int currentTot; //
         byte[] byteArray = new byte[65536]; // buffer
@@ -67,21 +69,20 @@ public class Node {
         InputStream is = socket.getInputStream();
         ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
         FileInfoMessage fileInfoMessage = (FileInfoMessage) objectInputStream.readObject();
-        System.out.println(fileInfoMessage.getFilelength());
-        System.out.println(fileInfoMessage.getFilename());
-//        FileOutputStream fos = new FileOutputStream("/cs/scratch/jm354/" + filename); // Save input file to this location
-//        BufferedOutputStream bos = new BufferedOutputStream(fos);
-//        bytesRead = is.read(byteArray, 0, byteArray.length);
-//        currentTot = bytesRead;
-//
-//        do {
-//            bytesRead = is.read(byteArray, currentTot, (byteArray.length - currentTot));
-//            if (bytesRead >= 0) currentTot += bytesRead;
-//        } while (bytesRead > -1);
-//
-//        bos.write(byteArray, 0, currentTot);
-//        bos.flush();
-//        bos.close();
+
+        FileOutputStream fos = new FileOutputStream("/cs/scratch/jm354/" + fileInfoMessage.getFilename()); // Save input file to this location
+        BufferedOutputStream bos = new BufferedOutputStream(fos);
+        bytesRead = is.read(byteArray, 0, byteArray.length);
+        currentTot = bytesRead;
+
+        do {
+            bytesRead = is.read(byteArray, currentTot, (byteArray.length - currentTot));
+            if (bytesRead >= 0) currentTot += bytesRead;
+        } while (bytesRead > -1);
+
+        bos.write(byteArray, 0, currentTot);
+        bos.flush();
+        bos.close();
         socket.close();
     }
 }
