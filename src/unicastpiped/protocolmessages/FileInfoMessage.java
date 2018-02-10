@@ -1,4 +1,4 @@
-package unicastpiped;
+package unicastpiped.protocolmessages;
 
 import java.io.Serializable;
 

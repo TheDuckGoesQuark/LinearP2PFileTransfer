@@ -16,4 +16,5 @@ public class NodeUtil {
         //map.put("pc5-016-l", "138.251.28.8");
         NODES = Collections.unmodifiableMap(map);
     }
+    static final String PATH_TO_SCRATCH ="/cs/scratch/jm354/";
 }

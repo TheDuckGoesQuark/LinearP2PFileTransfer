@@ -44,42 +44,30 @@ public class MulticastClient extends Thread {
         new MulticastClient().run();
     }
 
-    public void run()  {
+    public void run() {
         try {
             socket = new MulticastSocket(4446);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        InetAddress group = null;
-        try {
+
+            InetAddress group = null;
             group = InetAddress.getByName("230.0.0.0");
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-        try {
+
             socket.joinGroup(group);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        while (true) {
-            DatagramPacket packet = new DatagramPacket(buf, buf.length);
-            try {
+
+            while (true) {
+                DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
-            } catch (IOException e) {
-                e.printStackTrace();
+                String received = new String(
+                        packet.getData(), 0, packet.getLength());
+                if ("end".equals(received)) {
+                    break;
+                }
             }
-            String received = new String(
-                    packet.getData(), 0, packet.getLength());
-            if ("end".equals(received)) {
-                break;
-            }
-        }
-        try {
             socket.leaveGroup(group);
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            socket.close();
         }
-        socket.close();
     }
 }
 

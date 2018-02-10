@@ -1,10 +1,13 @@
 package unicastpiped;
 
 import sftp.NodeUtil;
+import unicastpiped.protocolmessages.FileInfoMessage;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import static unicastpiped.NodeUtil.PATH_TO_SCRATCH;
 
 public class Node {
     private NodeMode mode;
@@ -40,8 +43,6 @@ public class Node {
         // send file meta data
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
         FileInfoMessage fileInfoMessage = new FileInfoMessage(file.length(), fileName);
-        System.out.println(fileInfoMessage.getFilelength());
-        System.out.println(fileInfoMessage.getFilename());
         objectOutputStream.writeObject(fileInfoMessage);
 
         // send the file contents
@@ -56,6 +57,7 @@ public class Node {
             dout.write(bytes, 0, numRead);
             numSent += numRead;
         }
+        socket.shutdownOutput();
         socket.close();
 
     }
@@ -70,17 +72,20 @@ public class Node {
         ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
         FileInfoMessage fileInfoMessage = (FileInfoMessage) objectInputStream.readObject();
 
-        FileOutputStream fos = new FileOutputStream("/cs/scratch/jm354/" + fileInfoMessage.getFilename()); // Save input file to this location
+        FileOutputStream fos = new FileOutputStream(PATH_TO_SCRATCH + fileInfoMessage.getFilename()); // Save input file to this location
         BufferedOutputStream bos = new BufferedOutputStream(fos);
-        bytesRead = is.read(byteArray, 0, byteArray.length);
-        currentTot = bytesRead;
+        currentTot = 0;
 
         do {
             bytesRead = is.read(byteArray, currentTot, (byteArray.length - currentTot));
             if (bytesRead >= 0) currentTot += bytesRead;
+            bos.write(byteArray, 0, currentTot);
+            System.out.println(bytesRead);
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {}
         } while (bytesRead > -1);
 
-        bos.write(byteArray, 0, currentTot);
         bos.flush();
         bos.close();
         socket.close();
