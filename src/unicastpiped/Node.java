@@ -33,30 +33,26 @@ public class Node {
         // Retrieve file
         byte[] bytes = new byte[65536];
         File file = new File(this.fileName);
-        FileInputStream in = new FileInputStream(file);
+        FileInputStream fileInputStream = new FileInputStream(file);
         // Init socket
         ServerSocket serverSocket = new ServerSocket(NodeUtil.SERVER_PORT);
         // Wait for accepting client
         Socket socket = serverSocket.accept();
-        // Once found...
         OutputStream out = socket.getOutputStream();
         // send file meta data
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
         FileInfoMessage fileInfoMessage = new FileInfoMessage(file.length(), fileName);
         objectOutputStream.writeObject(fileInfoMessage);
+        objectOutputStream.flush();
 
         // send the file contents
         DataOutputStream dout = new DataOutputStream(out);
-        long numSent = 0;
-        long numToSend = fileInfoMessage.getFilelength();
-        while (numSent < numToSend) {
-            long numThisTime = numToSend - numSent;
-            numThisTime = numThisTime < bytes.length ? numThisTime : bytes.length;
-            int numRead = in.read(bytes, 0, (int) numThisTime);
-            if (numRead == -1) break;
-            dout.write(bytes, 0, numRead);
-            numSent += numRead;
+        int numSent = 0;
+
+        while ((numSent = fileInputStream.read(bytes)) != -1) {
+            out.write(bytes, 0, numSent);
         }
+
         socket.shutdownOutput();
         socket.close();
 
@@ -71,22 +67,20 @@ public class Node {
         InputStream is = socket.getInputStream();
         ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
         FileInfoMessage fileInfoMessage = (FileInfoMessage) objectInputStream.readObject();
-
         FileOutputStream fos = new FileOutputStream(PATH_TO_SCRATCH + fileInfoMessage.getFilename()); // Save input file to this location
         BufferedOutputStream bos = new BufferedOutputStream(fos);
         currentTot = 0;
 
-        do {
-            bytesRead = is.read(byteArray, currentTot, (byteArray.length - currentTot));
+        while ((bytesRead = is.read(byteArray, 0, byteArray.length)) != -1) {
             if (bytesRead >= 0) currentTot += bytesRead;
-            bos.write(byteArray, 0, currentTot);
             System.out.println(bytesRead);
+            bos.write(byteArray, 0, bytesRead);
+            bos.flush();
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {}
-        } while (bytesRead > -1);
+        }
 
-        bos.flush();
         bos.close();
         socket.close();
     }
