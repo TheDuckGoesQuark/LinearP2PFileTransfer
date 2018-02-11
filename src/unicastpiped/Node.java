@@ -76,9 +76,6 @@ public class Node {
             System.out.println(bytesRead);
             bos.write(byteArray, 0, bytesRead);
             bos.flush();
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {}
         }
 
         bos.close();
