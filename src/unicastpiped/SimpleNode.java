@@ -9,16 +9,16 @@ import java.net.Socket;
 
 import static unicastpiped.NodeUtil.PATH_TO_SCRATCH;
 
-public class Node {
+public class SimpleNode {
     private NodeMode mode;
     private String fileName;
 
-    Node(NodeMode mode, String fileName) {
+    public SimpleNode(NodeMode mode, String fileName) {
         this.mode = mode;
         this.fileName = fileName;
     }
 
-    void run() throws IOException, ClassNotFoundException {
+    public void run() throws IOException, ClassNotFoundException {
         switch (mode) {
             case LISTENING:
                 this.listenForFile();

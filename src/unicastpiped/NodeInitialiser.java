@@ -13,7 +13,7 @@ public class NodeInitialiser {
         if (nodeMode == DISTRIBUTE) {
             filePath = getFilePath();
         }
-        Node node = new Node(nodeMode, filePath);
+        SimpleNode node = new SimpleNode(nodeMode, filePath);
         node.run();
     }
 
