@@ -1,6 +1,6 @@
 package chord.unicastpiped.threads;
 
-public class PassOnDetailsThread implements Runnable {
+public class GetSenderNodeThread implements Runnable {
     @Override
     public void run() {
 

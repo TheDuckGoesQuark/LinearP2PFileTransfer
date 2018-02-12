@@ -3,6 +3,8 @@ import chord.unicastpiped.node.Node;
 import unicastpiped.NodeMode;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
 import static unicastpiped.NodeMode.DISTRIBUTE;
@@ -10,17 +12,27 @@ import static unicastpiped.NodeMode.LISTENING;
 
 public class Initializer {
 
-    public static void main(String[] args) {
+    /**
+     * Assumes node address is provided in arguments
+     * @param args
+     */
+    public static void main(String[] args) throws UnknownHostException {
 
         NodeMode nodeMode = getNodeMode();
         String filePath = getFilePath(nodeMode);
 
-        Node node = new Node((nodeMode == DISTRIBUTE), filePath);
+        String node_address;
+        if (args.length > 0) node_address = args[0];
+        else node_address = Inet4Address.getLocalHost().getHostAddress(); // Risky work-around
+
+        Node node = new Node((nodeMode == DISTRIBUTE), filePath, node_address);
 
         try {
             node.start();
         } catch (IOException e) {
             System.out.println("Failed: "+e.getMessage());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
 
         System.out.println("Exiting.");

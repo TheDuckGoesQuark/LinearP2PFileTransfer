@@ -2,8 +2,10 @@ package chord.unicastpiped.messages;
 
 public enum MessageType {
     NEW_NODE_MESSAGE("NEW_NODE"),
-    FILE_BLOCK("FILE_BLOCK"),
-    RECEIVER_DETAILS("RECEIVER_DETAILS");
+    FILE_BLOCK_MESSAGE("FILE_BLOCK"),
+    FILE_DETAILS_MESSAGE("FILE_DETAILS"),
+    RECEIVER_DETAILS_MESSAGE("RECEIVER_DETAILS"),
+    SENDER_DETAILS_MESSAGE("SENDER_DETAILS");
 
     private String type;
 

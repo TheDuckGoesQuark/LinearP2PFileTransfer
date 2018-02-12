@@ -1,13 +1,14 @@
 package chord.unicastpiped.node;
 
-import chord.unicastpiped.messages.FileDetails;
+import chord.unicastpiped.messages.*;
+import chord.unicastpiped.threads.ReceivingThread;
 
 import java.io.*;
+import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Node {
 
-    private BlockStore blockStore; // Handles CRUD operations on file
     private String filePath; // Path to file being sent/to save
     private boolean isSending; // is node currently sending data
     private boolean isRetrieving; // is node currently retrieving data
@@ -15,44 +16,50 @@ public class Node {
     private ObjectInputStream inputStream; // handles receiving data from socket
     private ObjectOutputStream outputStream; // handles sending data from socket
     private FileDetails fileDetails; // stores details about file
+    private ServerSocket serverSocket; // For listening to future connections
+    private SendingNodeDetails sendingNodeDetails; // Details of 'previous' node in ring
+    private ReceivingNodeDetails receivingNodeDetails; // Details of this node
 
-    public Node(boolean isRoot, String filePath) {
+    public Node(boolean isRoot, String filePath, String node_address) {
         this.isSending = false;
         this.isRetrieving = false;
         this.isRoot = isRoot;
         this.filePath = filePath;
+        this.receivingNodeDetails = new ReceivingNodeDetails(-1, node_address);
     }
 
     public void start() throws IOException, ClassNotFoundException {
         // Set up file channel
         File file;
+        serverSocket = new ServerSocket(NodeUtil.SERVER_PORT);
+        Socket socket;
+
         if (isRoot) {
             file = new File(this.filePath);
             fileDetails = new FileDetails(file.length(), file.getName());
         } else {
-            Socket socket = new Socket(NodeUtil.SERVER_ADDRESS, NodeUtil.SERVER_PORT);
+            // Contact static first node in ring
+            socket = new Socket(NodeUtil.SERVER_ADDRESS, NodeUtil.SERVER_PORT);
             inputStream = new ObjectInputStream(socket.getInputStream());
             outputStream = new ObjectOutputStream(socket.getOutputStream());
-
-            fileDetails = (FileDetails) inputStream.readObject();
-            filePath += fileDetails.getFilename();
-            file = new File(this.filePath);
+            requestSender(); // Make request to join end of ring
+            socket = refreshSender(socket); // Change sender to new sender
+            ReceivingThread receivingThread = new ReceivingThread(socket, filePath, this);
         }
-
-        this.blockStore = new BlockStore(
-                new RandomAccessFile(file, "rw"),
-                fileDetails.getFileLength()
-        );
-
-        listenForMessage();
     }
 
-    void getSenderDetails() {
-
+    private Socket refreshSender(Socket socket) throws IOException {
+        socket.close();
+        socket = new Socket(sendingNodeDetails.getAddress(), sendingNodeDetails.getPort());
+        inputStream = new ObjectInputStream(socket.getInputStream());
+        return socket;
     }
 
-    public void listenForMessage() {
-
+    private void requestSender() throws IOException, ClassNotFoundException {
+        Message message = new Message(MessageType.NEW_NODE_MESSAGE, receivingNodeDetails);
+        outputStream.writeObject(message);
+        message = (Message) inputStream.readObject();
+        sendingNodeDetails = (SendingNodeDetails) Message.deserialize(message.getData());
     }
 
     /*
@@ -95,24 +102,8 @@ public class Node {
         return inputStream;
     }
 
-    public void setInputStream(InputStream inputStream) {
-        this.inputStream = inputStream;
-    }
-
     public OutputStream getOutputStream() {
         return outputStream;
-    }
-
-    public void setOutputStream(OutputStream outputStream) {
-        this.outputStream = outputStream;
-    }
-
-    public FileOutputStream getFileOutputStream() {
-        return fileOutputStream;
-    }
-
-    public void setFileOutputStream(FileOutputStream fileOutputStream) {
-        this.fileOutputStream = fileOutputStream;
     }
 
     public String getFilepath() {
@@ -121,5 +112,37 @@ public class Node {
 
     public void setFilepath(String filePath) {
         this.filePath = filePath;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
+    public void setInputStream(ObjectInputStream inputStream) {
+        this.inputStream = inputStream;
+    }
+
+    public void setOutputStream(ObjectOutputStream outputStream) {
+        this.outputStream = outputStream;
+    }
+
+    public FileDetails getFileDetails() {
+        return fileDetails;
+    }
+
+    public void setFileDetails(FileDetails fileDetails) {
+        this.fileDetails = fileDetails;
+    }
+
+    public ServerSocket getServerSocket() {
+        return serverSocket;
+    }
+
+    public void setServerSocket(ServerSocket serverSocket) {
+        this.serverSocket = serverSocket;
     }
 }

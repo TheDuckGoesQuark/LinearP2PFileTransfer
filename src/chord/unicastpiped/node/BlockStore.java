@@ -20,11 +20,11 @@ public class BlockStore {
         randomAccessFile.setLength(fileLength);
     }
 
-    synchronized boolean hasBlock(int blockNumber) {
+    public synchronized boolean hasBlock(int blockNumber) {
         return blockToOffset.containsKey(blockNumber);
     }
 
-    synchronized void getBlock(int blockNumber, byte[] buffer) throws BlockNotFoundException, IOException {
+    public synchronized void getBlock(int blockNumber, byte[] buffer) throws BlockNotFoundException, IOException {
         if (hasBlock(blockNumber)) {
             long offset = blockToOffset.get(blockNumber);
             randomAccessFile.seek(offset);
@@ -32,9 +32,15 @@ public class BlockStore {
         } else throw new BlockNotFoundException();
     }
 
-    synchronized void writeBlock(int blockNumber, long offset, byte[] buffer) throws IOException {
+    public synchronized void writeBlock(int blockNumber, byte[] buffer) throws IOException {
+        long offset = blockNumber * NodeUtil.FILE_BUFFER_SIZE;
         randomAccessFile.seek(offset);
         randomAccessFile.write(buffer);
         blockToOffset.put(blockNumber, offset);
+    }
+
+    public boolean allFilesReceived() throws IOException {
+        double expectedNumberOfBlocks = Math.ceil(((double) randomAccessFile.length()/NodeUtil.FILE_BUFFER_SIZE));
+        return expectedNumberOfBlocks == blockToOffset.size();
     }
 }

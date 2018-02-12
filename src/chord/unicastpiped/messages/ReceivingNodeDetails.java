@@ -2,11 +2,11 @@ package chord.unicastpiped.messages;
 
 import java.io.Serializable;
 
-public class node_details implements Serializable {
+public class ReceivingNodeDetails implements Serializable {
     private int last_block_sent;
     private String address;
 
-    public node_details(int last_block_sent, String address) {
+    public ReceivingNodeDetails(int last_block_sent, String address) {
         this.last_block_sent = last_block_sent;
         this.address = address;
     }
