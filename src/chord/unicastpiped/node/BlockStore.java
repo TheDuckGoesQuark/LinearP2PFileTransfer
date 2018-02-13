@@ -29,7 +29,7 @@ public class BlockStore {
     }
 
     public void getBlock(int blockNumber, byte[] buffer) throws BlockNotFoundException, IOException {
-        if (hasBlock(blockNumber)) {
+        3if (hasBlock(blockNumber)) {
             long offset = blockToOffset.get(blockNumber);
             randomAccessFile.seek(offset);
             randomAccessFile.readFully(buffer);
