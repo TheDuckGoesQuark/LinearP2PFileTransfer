@@ -5,6 +5,7 @@ import chord.unicastpiped.exceptions.BlockNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
     Each node stores a map of which node it has,
@@ -12,13 +13,15 @@ import java.util.HashMap;
  **/
 public class BlockStore {
 
-    private HashMap<Integer, Long> blockToOffset = new HashMap<>();
+    private ConcurrentHashMap<Integer, Long> blockToOffset = new ConcurrentHashMap<>();
     private RandomAccessFile randomAccessFile;
 
     public BlockStore(RandomAccessFile randomAccessFile, long fileLength) throws IOException {
         this.randomAccessFile = randomAccessFile;
         randomAccessFile.setLength(fileLength);
     }
+
+    public BlockStore() {}
 
     public synchronized boolean hasBlock(int blockNumber) {
         return blockToOffset.containsKey(blockNumber);

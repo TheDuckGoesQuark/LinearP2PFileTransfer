@@ -1,148 +1,64 @@
 package chord.unicastpiped.node;
 
 import chord.unicastpiped.messages.*;
-import chord.unicastpiped.threads.ReceivingThread;
+import chord.unicastpiped.threads.ClientThread;
+import chord.unicastpiped.threads.ServerThread;
+import jdk.nashorn.internal.ir.Block;
 
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 
 public class Node {
 
     private String filePath; // Path to file being sent/to save
-    private boolean isSending; // is node currently sending data
-    private boolean isRetrieving; // is node currently retrieving data
     private boolean isRoot; // is this node the original host of the file
-    private ObjectInputStream inputStream; // handles receiving data from socket
-    private ObjectOutputStream outputStream; // handles sending data from socket
-    private FileDetails fileDetails; // stores details about file
-    private ServerSocket serverSocket; // For listening to future connections
-    private SendingNodeDetails sendingNodeDetails; // Details of 'previous' node in ring
     private ReceivingNodeDetails receivingNodeDetails; // Details of this node
 
     public Node(boolean isRoot, String filePath, String node_address) {
-        this.isSending = false;
-        this.isRetrieving = false;
         this.isRoot = isRoot;
         this.filePath = filePath;
         this.receivingNodeDetails = new ReceivingNodeDetails(-1, node_address);
     }
 
     public void start() throws IOException, ClassNotFoundException {
-        // Set up file channel
-        File file;
-        serverSocket = new ServerSocket(NodeUtil.SERVER_PORT);
-        Socket socket;
+        Socket socket = null;
+        ClientThread clientThread;
+        BlockStore blockStore = new BlockStore();
 
-        if (isRoot) {
-            file = new File(this.filePath);
-            fileDetails = new FileDetails(file.length(), file.getName());
+        if (!isRoot) {
+            // Repeat requests until sender found
+            while(socket == null) socket = discoverSender();
+            // init thread for receiving data
+            clientThread = new ClientThread(socket, filePath, blockStore);
         } else {
-            // Contact static first node in ring
-            socket = new Socket(NodeUtil.SERVER_ADDRESS, NodeUtil.SERVER_PORT);
-            inputStream = new ObjectInputStream(socket.getInputStream());
-            outputStream = new ObjectOutputStream(socket.getOutputStream());
-            requestSender(); // Make request to join end of ring
-            socket = refreshSender(socket); // Change sender to new sender
-            ReceivingThread receivingThread = new ReceivingThread(socket, filePath, this);
+            // init blockstore with file details.
+            blockStore = initBlockstore();
         }
+        // init thread for sending data
+        ServerThread serverThread = new ServerThread(blockStore);
     }
 
-    private Socket refreshSender(Socket socket) throws IOException {
-        socket.close();
-        socket = new Socket(sendingNodeDetails.getAddress(), sendingNodeDetails.getPort());
-        inputStream = new ObjectInputStream(socket.getInputStream());
+    private Socket discoverSender() {
+        Socket socket = null;
+        try {
+            // Send message to all nodes
+            DatagramSocket s = new DatagramSocket();
+            Message message = new Message(MessageType.NEW_NODE_MESSAGE, receivingNodeDetails);
+            byte[] dataBytes = Message.serialize(message);
+            DatagramPacket datagramPacket = new DatagramPacket(dataBytes, dataBytes.length, InetAddress.getByName("224.0.0.10"), 4446);
+            s.send(datagramPacket);
+
+            // Listen for join from end of ring
+            ServerSocket serverSocket = new ServerSocket(4446);
+            socket = serverSocket.accept();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
         return socket;
     }
 
-    private void requestSender() throws IOException, ClassNotFoundException {
-        Message message = new Message(MessageType.NEW_NODE_MESSAGE, receivingNodeDetails);
-        outputStream.writeObject(message);
-        message = (Message) inputStream.readObject();
-        sendingNodeDetails = (SendingNodeDetails) Message.deserialize(message.getData());
-    }
-
-    /*
-        Getters and setters
-     */
-
-    public BlockStore getBlockStore() {
-        return blockStore;
-    }
-
-    public void setBlockStore(BlockStore blockStore) {
-        this.blockStore = blockStore;
-    }
-
-    public boolean isSending() {
-        return isSending;
-    }
-
-    public void setSending(boolean sending) {
-        isSending = sending;
-    }
-
-    public boolean isRetrieving() {
-        return isRetrieving;
-    }
-
-    public void setRetrieving(boolean retrieving) {
-        isRetrieving = retrieving;
-    }
-
-    public boolean isRoot() {
-        return isRoot;
-    }
-
-    public void setRoot(boolean root) {
-        isRoot = root;
-    }
-
-    public InputStream getInputStream() {
-        return inputStream;
-    }
-
-    public OutputStream getOutputStream() {
-        return outputStream;
-    }
-
-    public String getFilepath() {
-        return filePath;
-    }
-
-    public void setFilepath(String filePath) {
-        this.filePath = filePath;
-    }
-
-    public String getFilePath() {
-        return filePath;
-    }
-
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
-    }
-
-    public void setInputStream(ObjectInputStream inputStream) {
-        this.inputStream = inputStream;
-    }
-
-    public void setOutputStream(ObjectOutputStream outputStream) {
-        this.outputStream = outputStream;
-    }
-
-    public FileDetails getFileDetails() {
-        return fileDetails;
-    }
-
-    public void setFileDetails(FileDetails fileDetails) {
-        this.fileDetails = fileDetails;
-    }
-
-    public ServerSocket getServerSocket() {
-        return serverSocket;
-    }
-
-    public void setServerSocket(ServerSocket serverSocket) {
-        this.serverSocket = serverSocket;
+    private BlockStore initBlockstore() throws IOException {
+        File file = new File(filePath);
+        return new BlockStore(new RandomAccessFile(file,"r"), file.length());
     }
 }
