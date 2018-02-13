@@ -5,6 +5,7 @@ import chord.unicastpiped.exceptions.BlockNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -27,7 +28,7 @@ public class BlockStore {
         return blockToOffset.containsKey(blockNumber);
     }
 
-    public synchronized void getBlock(int blockNumber, byte[] buffer) throws BlockNotFoundException, IOException {
+    public void getBlock(int blockNumber, byte[] buffer) throws BlockNotFoundException, IOException {
         if (hasBlock(blockNumber)) {
             long offset = blockToOffset.get(blockNumber);
             randomAccessFile.seek(offset);
@@ -35,11 +36,12 @@ public class BlockStore {
         } else throw new BlockNotFoundException();
     }
 
-    public synchronized void writeBlock(int blockNumber, byte[] buffer) throws IOException {
+    public void writeBlock(int blockNumber, byte[] buffer) throws IOException {
         long offset = blockNumber * NodeUtil.FILE_BUFFER_SIZE;
         randomAccessFile.seek(offset);
         randomAccessFile.write(buffer);
         blockToOffset.put(blockNumber, offset);
+        blockToOffset.notifyAll();
     }
 
     public boolean allFilesReceived() throws IOException {
