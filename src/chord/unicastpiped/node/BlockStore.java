@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 /**
     Each node stores a map of which node it has,
@@ -14,34 +14,33 @@ import java.util.concurrent.ConcurrentHashMap;
  **/
 public class BlockStore {
 
-    private ConcurrentHashMap<Integer, Long> blockToOffset = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Integer, Future<Long>> blockToOffset = new ConcurrentHashMap<>();
     private RandomAccessFile randomAccessFile;
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public BlockStore(RandomAccessFile randomAccessFile, long fileLength) throws IOException {
         this.randomAccessFile = randomAccessFile;
         randomAccessFile.setLength(fileLength);
+        double expectedNumberOfBlocks = Math.ceil(((double) randomAccessFile.length()/NodeUtil.FILE_BUFFER_SIZE));
     }
 
-    public BlockStore() {}
-
-    public synchronized boolean hasBlock(int blockNumber) {
-        return blockToOffset.containsKey(blockNumber);
-    }
-
-    public void getBlock(int blockNumber, byte[] buffer) throws BlockNotFoundException, IOException {
-        3if (hasBlock(blockNumber)) {
-            long offset = blockToOffset.get(blockNumber);
+    public void getBlock(int blockNumber, byte[] buffer) throws BlockNotFoundException {
+        try {
+            long offset = (blockToOffset.get(blockNumber)).get();
             randomAccessFile.seek(offset);
             randomAccessFile.readFully(buffer);
-        } else throw new BlockNotFoundException();
+        } catch (ExecutionException|InterruptedException|IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void writeBlock(int blockNumber, byte[] buffer) throws IOException {
         long offset = blockNumber * NodeUtil.FILE_BUFFER_SIZE;
         randomAccessFile.seek(offset);
         randomAccessFile.write(buffer);
-        blockToOffset.put(blockNumber, offset);
-        blockToOffset.notifyAll();
+        Callable<Long> callableLong = () -> offset;
+        Future<Long> future = executorService.submit(callableLong);
+        blockToOffset.put(blockNumber, future);
     }
 
     public boolean allFilesReceived() throws IOException {
