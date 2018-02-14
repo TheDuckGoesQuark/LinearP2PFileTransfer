@@ -31,8 +31,4 @@ public class Message implements Serializable {
     public byte[] getData() {
         return data;
     }
-
-    public void setData(byte[] data) {
-        this.data = data;
-    }
 }

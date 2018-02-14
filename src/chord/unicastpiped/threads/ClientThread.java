@@ -2,6 +2,7 @@ package chord.unicastpiped.threads;
 
 import chord.unicastpiped.messages.*;
 import chord.unicastpiped.node.BlockStore;
+import chord.unicastpiped.node.Node;
 import jdk.nashorn.internal.ir.Block;
 
 import java.io.*;
@@ -10,9 +11,7 @@ import java.net.Socket;
 public class ClientThread implements Runnable {
 
     private Socket socket;
-    private BlockStore blockStore; // Handles CRUD operations on file
     private String fileLocation;
-    private boolean isRoot;
 
     /**
      * Constructor for all non-root nodes to receive nodes.
@@ -20,10 +19,9 @@ public class ClientThread implements Runnable {
      * @param saveLocation
      * @throws IOException
      */
-    public ClientThread(Socket socket, String saveLocation, BlockStore blockStore) throws IOException {
+    public ClientThread(Socket socket, String saveLocation) throws IOException {
         this.socket = socket;
         this.fileLocation = saveLocation;
-        this.blockStore = blockStore;
     }
 
     @Override
@@ -34,7 +32,7 @@ public class ClientThread implements Runnable {
             do {
                 message = (Message) is.readObject();
                 chooseAction(message);
-            } while (blockStore == null || !blockStore.allFilesReceived());
+            } while (Node.blockStore == null || !Node.blockStore.allFilesReceived());
             socket.close();
 
         } catch (IOException | ClassNotFoundException e) {
@@ -47,16 +45,20 @@ public class ClientThread implements Runnable {
         switch (messageType) {
             case FILE_BLOCK_MESSAGE:
                 FileBlock fileBlock = (FileBlock) Message.deserialize(message.getData());
-                blockStore.writeBlock(fileBlock.getBlockNumber(), fileBlock.getData());
+                Node.blockStore.writeBlock(fileBlock.getBlockNumber(), fileBlock.getData());
                 break;
             case FILE_DETAILS_MESSAGE:
                 FileDetails fileDetails = (FileDetails) Message.deserialize(message.getData());
                 File file = new File(fileLocation + fileDetails.getFilename());
-                this.blockStore = new BlockStore(
-                        new RandomAccessFile(file, "rw"),
-                        fileDetails.getFileLength(),
-                        false
-                );
+                synchronized (Node.blockStore.lock) {
+                    Node.blockStore = new BlockStore(
+                            new RandomAccessFile(file, "rw"),
+                            fileDetails.getFileLength(),
+                            false,
+                            file
+                    );
+                    Node.blockStore.notifyAll();
+                }
         }
     }
 }

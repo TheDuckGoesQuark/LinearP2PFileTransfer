@@ -1,12 +1,8 @@
 package chord.unicastpiped.node;
 
-import chord.unicastpiped.exceptions.BlockNotFoundException;
-
-import java.io.EOFException;
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.*;
 
 /**
@@ -17,12 +13,15 @@ public class BlockStore {
 
     private ConcurrentHashMap<Integer, BlockingQueue<Long>> blockToOffset = new ConcurrentHashMap<>();
     private RandomAccessFile randomAccessFile;
+    private File file;
     private int blocksReceived;
+    public final Object lock = new Object();
 
-    BlockStore() {}
+    BlockStore() { }
 
-    public BlockStore(RandomAccessFile randomAccessFile, long fileLength, boolean isRoot) throws IOException {
+    public BlockStore(RandomAccessFile randomAccessFile, long fileLength, boolean isRoot, File file) throws IOException {
         this.randomAccessFile = randomAccessFile;
+        this.file = file;
         randomAccessFile.setLength(fileLength);
         if (isRoot) {
             long offset = 0;
@@ -70,7 +69,24 @@ public class BlockStore {
     }
 
     public boolean allFilesReceived() throws IOException {
-        double expectedNumberOfBlocks = Math.ceil(((double) randomAccessFile.length() / NodeUtil.FILE_BUFFER_SIZE));
-        return expectedNumberOfBlocks == blocksReceived;
+        return getExpectedNumberOfBlocks() == blocksReceived;
     }
+
+    public int getExpectedNumberOfBlocks() {
+        return blockToOffset.size();
+    }
+
+    public long getFileLength() throws IOException {
+        return randomAccessFile.length();
+    }
+
+    public String getFileName() {
+        return file.getName();
+    }
+
+    public boolean isInitialised() {
+        return randomAccessFile != null;
+    }
+
+
 }

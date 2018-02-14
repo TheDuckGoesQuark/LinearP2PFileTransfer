@@ -21,12 +21,7 @@ public class Initializer {
 
         NodeMode nodeMode = getNodeMode();
         String filePath = getFilePath(nodeMode);
-
-        String node_address;
-        if (args.length > 0) node_address = args[0];
-        else node_address = Inet4Address.getLocalHost().getHostAddress(); // Risky work-around
-
-        Node node = new Node((nodeMode == DISTRIBUTE), filePath, node_address);
+        Node node = new Node((nodeMode == DISTRIBUTE), filePath);
 
         try {
             node.start();
