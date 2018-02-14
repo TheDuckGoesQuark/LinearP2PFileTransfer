@@ -35,6 +35,8 @@ public class ClientThread implements Runnable {
                 message = (Message) is.readObject();
                 chooseAction(message);
             } while (blockStore == null || !blockStore.allFilesReceived());
+            socket.close();
+
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -52,7 +54,8 @@ public class ClientThread implements Runnable {
                 File file = new File(fileLocation + fileDetails.getFilename());
                 this.blockStore = new BlockStore(
                         new RandomAccessFile(file, "rw"),
-                        fileDetails.getFileLength()
+                        fileDetails.getFileLength(),
+                        false
                 );
         }
     }

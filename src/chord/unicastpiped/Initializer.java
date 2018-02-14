@@ -7,6 +7,7 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
+import static chord.unicastpiped.node.NodeUtil.PATH_TO_SCRATCH;
 import static unicastpiped.NodeMode.DISTRIBUTE;
 import static unicastpiped.NodeMode.LISTENING;
 
@@ -46,7 +47,7 @@ public class Initializer {
         input = sc.nextLine();
         if (input == null || input.equals("")) {
             System.out.println("Defaulting to /cs/scratch/jm354/");
-            input = "/cs/scratch/jm354/";
+            input = PATH_TO_SCRATCH;
         }
         sc.close();
 

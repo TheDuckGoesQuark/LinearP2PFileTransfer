@@ -8,6 +8,9 @@ import jdk.nashorn.internal.ir.Block;
 import java.io.*;
 import java.net.*;
 
+import static chord.unicastpiped.node.NodeUtil.FILE_BUFFER_SIZE;
+import static chord.unicastpiped.node.NodeUtil.MULTICAST_ADDRESS;
+
 public class Node {
 
     private String filePath; // Path to file being sent/to save
@@ -17,7 +20,7 @@ public class Node {
     public Node(boolean isRoot, String filePath, String node_address) {
         this.isRoot = isRoot;
         this.filePath = filePath;
-        this.receivingNodeDetails = new ReceivingNodeDetails(-1, node_address);
+        this.receivingNodeDetails = new ReceivingNodeDetails(-1);
     }
 
     public void start() throws IOException, ClassNotFoundException {
@@ -28,24 +31,33 @@ public class Node {
         if (!isRoot) {
             // Repeat requests until sender found
             while(socket == null) socket = discoverSender();
-            // init thread for receiving data
+            // thread for receiving data
             clientThread = new ClientThread(socket, filePath, blockStore);
+            clientThread.run();
         } else {
             // init blockstore with file details.
             blockStore = initBlockstore();
         }
         // init thread for sending data
         ServerThread serverThread = new ServerThread(blockStore);
+        serverThread.run();
     }
 
     private Socket discoverSender() {
         Socket socket = null;
         try {
             // Send message to all nodes
-            DatagramSocket s = new DatagramSocket();
             Message message = new Message(MessageType.NEW_NODE_MESSAGE, receivingNodeDetails);
-            byte[] dataBytes = Message.serialize(message);
-            DatagramPacket datagramPacket = new DatagramPacket(dataBytes, dataBytes.length, InetAddress.getByName("224.0.0.10"), 4446);
+            DatagramSocket s = new DatagramSocket();
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(FILE_BUFFER_SIZE);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+            objectOutputStream.writeObject(message);
+            byte[] dataBytes = byteArrayOutputStream.toByteArray();
+            DatagramPacket datagramPacket = new DatagramPacket(
+                    dataBytes,
+                    dataBytes.length,
+                    InetAddress.getByName(MULTICAST_ADDRESS),
+                    4446);
             s.send(datagramPacket);
 
             // Listen for join from end of ring
@@ -59,6 +71,6 @@ public class Node {
 
     private BlockStore initBlockstore() throws IOException {
         File file = new File(filePath);
-        return new BlockStore(new RandomAccessFile(file,"r"), file.length());
+        return new BlockStore(new RandomAccessFile(file,"r"), file.length(), true);
     }
 }
