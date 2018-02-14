@@ -2,7 +2,6 @@ package chord.unicastpiped.threads;
 
 import chord.unicastpiped.messages.*;
 import chord.unicastpiped.node.Node;
-import sftp.NodeUtil;
 
 import java.io.*;
 import java.net.*;

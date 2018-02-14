@@ -3,12 +3,10 @@ package chord.unicastpiped.node;
 import chord.unicastpiped.messages.*;
 import chord.unicastpiped.threads.ClientThread;
 import chord.unicastpiped.threads.ServerThread;
-import jdk.nashorn.internal.ir.Block;
 
 import java.io.*;
 import java.net.*;
 
-import static chord.unicastpiped.node.NodeUtil.FILE_BUFFER_SIZE;
 import static chord.unicastpiped.node.NodeUtil.MULTICAST_ADDRESS;
 
 public class Node {
