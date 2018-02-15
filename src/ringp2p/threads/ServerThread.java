@@ -7,15 +7,13 @@ import ringp2p.node.Node;
 import java.io.*;
 import java.net.*;
 
-import static ringp2p.node.NodeUtil.FILE_BUFFER_SIZE;
-import static ringp2p.node.NodeUtil.MULTICAST_ADDRESS;
-import static ringp2p.node.NodeUtil.MULTICAST_PORT;
+import static ringp2p.node.NodeUtil.*;
 
 /**
  * Listens for new nodes wanting to join the ring.
  * Once found, connects and begins sending file blocks once their available.
  */
-public class ServerThread implements Runnable {
+public class ServerThread extends Thread {
 
     private ReceivingNodeDetails receivingNodeDetails;
 
@@ -30,7 +28,7 @@ public class ServerThread implements Runnable {
         synchronized (BlockStore.lock) {
             while (!Node.blockStore.isInitialised()) {
                 try {
-                    System.out.println("Waiting");
+                    System.out.println("Waiting for blockstore to be initialised.");
                     Node.blockStore.wait();
                 } catch (Exception e) {
                     System.out.println("Wait for fileblock was interrupted.");
@@ -50,7 +48,6 @@ public class ServerThread implements Runnable {
     private void distributeFile() throws IOException {
         // Init socket
         Socket socket = new Socket(receivingNodeDetails.getAddress(), receivingNodeDetails.getPort());
-        // Wait for accepting client
         OutputStream out = socket.getOutputStream();
         // send file meta data
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
@@ -58,7 +55,7 @@ public class ServerThread implements Runnable {
         objectOutputStream.writeObject(message);
 
         // send the file contents
-        for (int i = 0; i < Node.blockStore.getExpectedNumberOfBlocks(); i++) {
+        for (int i = receivingNodeDetails.getLast_block_sent()+1; i < Node.blockStore.getExpectedNumberOfBlocks(); i++) {
             byte[] file_data = new byte[FILE_BUFFER_SIZE];
             boolean file_retrieved = false;
             while (!file_retrieved) {
@@ -93,7 +90,7 @@ public class ServerThread implements Runnable {
             receivingNodeDetails = new ReceivingNodeDetails(
                     dataInputStream.readInt(),
                     datagramPacket.getAddress().toString().replace("/", ""),
-                    datagramPacket.getPort()
+                    UNICAST_PORT
             );
             System.out.println("Receiving node: "+ receivingNodeDetails.toString());
         } catch (IOException e) {

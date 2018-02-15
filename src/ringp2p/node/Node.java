@@ -6,10 +6,10 @@ import ringp2p.messages.ReceivingNodeDetails;
 
 import java.io.*;
 import java.net.*;
-import java.util.Arrays;
 
 import static ringp2p.node.NodeUtil.MULTICAST_ADDRESS;
 import static ringp2p.node.NodeUtil.MULTICAST_PORT;
+import static ringp2p.node.NodeUtil.UNICAST_PORT;
 
 public class Node {
 
@@ -27,16 +27,18 @@ public class Node {
 
     public void start() throws ClassNotFoundException {
         Socket socket = null;
-        ClientThread clientThread;
+        ClientThread clientThread = null;
         blockStore = new BlockStore();
 
         if (!isRoot) {
             // Repeat requests until sender found
-            while (socket == null) socket = discoverSender();
+            while (socket == null) {
+                socket = discoverSender();
+            }
             // thread for receiving data
             try {
                 clientThread = new ClientThread(socket, filePath);
-                clientThread.run();
+                clientThread.start();
             } catch (IOException e) {
                 System.out.println("Failure when running client thread.");
                 System.out.println(e.getMessage());
@@ -49,14 +51,20 @@ public class Node {
                     BlockStore.lock.notifyAll();
                 } catch (IOException e) {
                     System.out.println("Failure when initialising blockstore.");
-                    System.out.println(Arrays.toString(e.getStackTrace()));
                     System.out.println(e.getMessage());
                 }
             }
         }
         // init thread for sending data
         ServerThread serverThread = new ServerThread();
-        serverThread.run();
+        serverThread.start();
+
+        try {
+            if (clientThread != null) clientThread.join();
+            serverThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private Socket discoverSender() {
@@ -76,9 +84,10 @@ public class Node {
                     InetAddress.getByName(MULTICAST_ADDRESS),
                     MULTICAST_PORT);
             s.send(datagramPacket);
+            s.close();
 
             // Listen for join from end of ring
-            ServerSocket serverSocket = new ServerSocket(4446);
+            ServerSocket serverSocket = new ServerSocket(UNICAST_PORT);
             socket = serverSocket.accept();
         } catch (Exception e) {
             System.out.println("Failure when trying to join ring.");
