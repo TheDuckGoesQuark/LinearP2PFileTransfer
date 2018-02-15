@@ -50,13 +50,17 @@ public class BlockStore {
         }
     }
 
+    private boolean isLastBlock(int blockNumber) {
+        return blockNumber != getExpectedNumberOfBlocks() - 1;
+    }
+
     public void getBlock(int blockNumber, byte[] buffer) throws InterruptedException {
         BlockingQueue<Long> queue = ensureQueueExists(blockNumber);
         try {
             long offset = queue.poll(60L, TimeUnit.SECONDS);
             queue.add(offset); // Put offset back into queue. Since get will only be called by one thread, this does not result in a race condition
             randomAccessFile.seek(offset);
-            if (blockNumber != getExpectedNumberOfBlocks() - 1) {
+            if (isLastBlock(blockNumber)) {
                 randomAccessFile.readFully(buffer);
             } else {
                 long lengthOfLastBlock = getFileLength() % FILE_BUFFER_SIZE;
@@ -71,7 +75,12 @@ public class BlockStore {
         BlockingQueue<Long> queue = ensureQueueExists(blockNumber);
         long offset = blockNumber * FILE_BUFFER_SIZE;
         randomAccessFile.seek(offset);
-        randomAccessFile.write(buffer);
+        if (isLastBlock(blockNumber)) {
+            randomAccessFile.write(buffer);
+        } else {
+            long lengthOfLastBlock = getFileLength() % FILE_BUFFER_SIZE;
+            randomAccessFile.write(buffer, 0, Math.toIntExact(lengthOfLastBlock));
+        }
         queue.add(offset);
         blockToOffset.put(blockNumber, queue);
         blocksReceived++;

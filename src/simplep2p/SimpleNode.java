@@ -73,7 +73,6 @@ public class SimpleNode {
 
         while ((bytesRead = is.read(byteArray, 0, byteArray.length)) != -1) {
             if (bytesRead >= 0) currentTot += bytesRead;
-            System.out.println(bytesRead);
             bos.write(byteArray, 0, bytesRead);
             bos.flush();
         }

@@ -49,13 +49,12 @@ public class ClientThread extends Thread {
         switch (messageType) {
             case FILE_BLOCK_MESSAGE:
                 FileBlock fileBlock = (FileBlock) Message.deserialize(message.getData());
-                System.out.println("Received file block "+fileBlock.getBlockNumber());
                 Node.blockStore.writeBlock(fileBlock.getBlockNumber(), fileBlock.getData());
                 break;
             case FILE_DETAILS_MESSAGE:
                 FileDetails fileDetails = (FileDetails) Message.deserialize(message.getData());
-                System.out.println("Received file details "+fileDetails.getFileLength());
                 File file = new File(fileLocation + fileDetails.getFilename());
+                if (file.exists()) file.delete(); // Deletes file to avoid old file length being read
                 synchronized (BlockStore.lock) {
                     Node.blockStore = new BlockStore(
                             new RandomAccessFile(file, "rw"),
