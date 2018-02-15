@@ -1,4 +1,3 @@
 #!/bin/bash
-find . -name "*.class" -exec rm -f {} \;
-javac ringp2p/Initializer.java
+cd /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src
 java ringp2p.Initializer root_input.txt
