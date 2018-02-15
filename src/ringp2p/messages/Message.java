@@ -1,4 +1,4 @@
-package chord.unicastpiped.messages;
+package ringp2p.messages;
 
 import java.io.*;
 

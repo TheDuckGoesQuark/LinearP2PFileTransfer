@@ -1,13 +1,13 @@
-package unicastpiped;
+package simplep2p;
 
 import sftp.NodeUtil;
-import unicastpiped.protocolmessages.FileInfoMessage;
+import simplep2p.protocolmessages.FileInfoMessage;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import static unicastpiped.NodeUtil.PATH_TO_SCRATCH;
+import static simplep2p.NodeUtil.PATH_TO_SCRATCH;
 
 public class SimpleNode {
     private NodeMode mode;

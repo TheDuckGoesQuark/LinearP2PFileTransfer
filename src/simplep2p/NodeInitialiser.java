@@ -1,9 +1,9 @@
-package unicastpiped;
+package simplep2p;
 
 import java.io.IOException;
 import java.util.Scanner;
 
-import static unicastpiped.NodeMode.*;
+import static simplep2p.NodeMode.*;
 
 public class NodeInitialiser {
 

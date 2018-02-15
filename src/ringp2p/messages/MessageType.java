@@ -1,4 +1,4 @@
-package chord.unicastpiped.messages;
+package ringp2p.messages;
 
 public enum MessageType {
     NEW_NODE_MESSAGE("NEW_NODE"),

@@ -1,13 +1,15 @@
-package chord.unicastpiped.node;
+package ringp2p.node;
 
-import chord.unicastpiped.messages.*;
-import chord.unicastpiped.threads.ClientThread;
-import chord.unicastpiped.threads.ServerThread;
+import ringp2p.threads.ClientThread;
+import ringp2p.threads.ServerThread;
+import ringp2p.messages.ReceivingNodeDetails;
 
 import java.io.*;
 import java.net.*;
+import java.util.Arrays;
 
-import static chord.unicastpiped.node.NodeUtil.MULTICAST_ADDRESS;
+import static ringp2p.node.NodeUtil.MULTICAST_ADDRESS;
+import static ringp2p.node.NodeUtil.MULTICAST_PORT;
 
 public class Node {
 
@@ -23,22 +25,33 @@ public class Node {
         this.receivingNodeDetails = new ReceivingNodeDetails(-1);
     }
 
-    public void start() throws IOException, ClassNotFoundException {
+    public void start() throws ClassNotFoundException {
         Socket socket = null;
         ClientThread clientThread;
+        blockStore = new BlockStore();
 
         if (!isRoot) {
             // Repeat requests until sender found
-            while(socket == null) socket = discoverSender();
+            while (socket == null) socket = discoverSender();
             // thread for receiving data
-            blockStore = new BlockStore();
-            clientThread = new ClientThread(socket, filePath);
-            clientThread.run();
+            try {
+                clientThread = new ClientThread(socket, filePath);
+                clientThread.run();
+            } catch (IOException e) {
+                System.out.println("Failure when running client thread.");
+                System.out.println(e.getMessage());
+            }
         } else {
             // init blockstore with file details.
-            synchronized (blockStore.lock) {
-                blockStore = initBlockstore();
-                blockStore.lock.notifyAll();
+            synchronized (BlockStore.lock) {
+                try {
+                    blockStore = initBlockstore();
+                    BlockStore.lock.notifyAll();
+                } catch (IOException e) {
+                    System.out.println("Failure when initialising blockstore.");
+                    System.out.println(Arrays.toString(e.getStackTrace()));
+                    System.out.println(e.getMessage());
+                }
             }
         }
         // init thread for sending data
@@ -55,19 +68,20 @@ public class Node {
             dataOutputStream.writeInt(receivingNodeDetails.getLast_block_sent());
             dataOutputStream.close();
             // Send request to all nodes
-            DatagramSocket s = new DatagramSocket();
+            DatagramSocket s = new DatagramSocket(MULTICAST_PORT);
             byte[] dataBytes = byteArrayOutputStream.toByteArray();
             DatagramPacket datagramPacket = new DatagramPacket(
                     dataBytes,
                     dataBytes.length,
                     InetAddress.getByName(MULTICAST_ADDRESS),
-                    4446);
+                    MULTICAST_PORT);
             s.send(datagramPacket);
 
             // Listen for join from end of ring
             ServerSocket serverSocket = new ServerSocket(4446);
             socket = serverSocket.accept();
         } catch (Exception e) {
+            System.out.println("Failure when trying to join ring.");
             System.out.println(e.getMessage());
         }
         return socket;
@@ -75,6 +89,6 @@ public class Node {
 
     private BlockStore initBlockstore() throws IOException {
         File file = new File(filePath);
-        return new BlockStore(new RandomAccessFile(file,"r"), file.length(), true, file);
+        return new BlockStore(new RandomAccessFile(file, "r"), file.length(), true, file);
     }
 }

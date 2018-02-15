@@ -1,4 +1,4 @@
-package unicastpiped.protocolmessages;
+package simplep2p.protocolmessages;
 
 import java.io.Serializable;
 

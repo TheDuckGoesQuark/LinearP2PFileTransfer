@@ -1,6 +1,8 @@
-package chord.unicastpiped.messages;
+package ringp2p.messages;
 
-public class FileBlock {
+import java.io.Serializable;
+
+public class FileBlock implements Serializable{
     private int blockNumber;
     private byte[] data;
 

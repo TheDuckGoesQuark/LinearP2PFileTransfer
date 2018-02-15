@@ -1,9 +1,11 @@
-package chord.unicastpiped.threads;
+package ringp2p.threads;
 
-import chord.unicastpiped.messages.*;
-import chord.unicastpiped.node.BlockStore;
-import chord.unicastpiped.node.Node;
-import jdk.nashorn.internal.ir.Block;
+import ringp2p.messages.FileBlock;
+import ringp2p.messages.FileDetails;
+import ringp2p.node.BlockStore;
+import ringp2p.node.Node;
+import ringp2p.messages.Message;
+import ringp2p.messages.MessageType;
 
 import java.io.*;
 import java.net.Socket;
@@ -36,6 +38,7 @@ public class ClientThread implements Runnable {
             socket.close();
 
         } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Failure when trying to retrieve files.");
             e.printStackTrace();
         }
     }
@@ -50,7 +53,7 @@ public class ClientThread implements Runnable {
             case FILE_DETAILS_MESSAGE:
                 FileDetails fileDetails = (FileDetails) Message.deserialize(message.getData());
                 File file = new File(fileLocation + fileDetails.getFilename());
-                synchronized (Node.blockStore.lock) {
+                synchronized (BlockStore.lock) {
                     Node.blockStore = new BlockStore(
                             new RandomAccessFile(file, "rw"),
                             fileDetails.getFileLength(),

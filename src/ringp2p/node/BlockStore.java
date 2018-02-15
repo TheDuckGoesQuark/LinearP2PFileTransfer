@@ -1,4 +1,4 @@
-package chord.unicastpiped.node;
+package ringp2p.node;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,14 +15,14 @@ public class BlockStore {
     private RandomAccessFile randomAccessFile;
     private File file;
     private int blocksReceived;
-    public final Object lock = new Object();
+    public static final Object lock = new Object();
 
     BlockStore() { }
 
     public BlockStore(RandomAccessFile randomAccessFile, long fileLength, boolean isRoot, File file) throws IOException {
         this.randomAccessFile = randomAccessFile;
         this.file = file;
-        randomAccessFile.setLength(fileLength);
+        if (file.length() < fileLength) randomAccessFile.setLength(fileLength);
         if (isRoot) {
             long offset = 0;
             int blockNumber = 0;

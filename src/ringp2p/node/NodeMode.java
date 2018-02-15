@@ -1,4 +1,4 @@
-package unicastpiped;
+package ringp2p.node;
 
 public enum NodeMode {
     DISTRIBUTE,

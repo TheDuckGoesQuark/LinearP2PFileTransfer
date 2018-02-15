@@ -1,13 +1,15 @@
-package chord.unicastpiped.threads;
+package ringp2p.threads;
 
-import chord.unicastpiped.messages.*;
-import chord.unicastpiped.node.Node;
+import ringp2p.messages.*;
+import ringp2p.node.BlockStore;
+import ringp2p.node.Node;
 
 import java.io.*;
 import java.net.*;
 
-import static chord.unicastpiped.node.NodeUtil.FILE_BUFFER_SIZE;
-import static chord.unicastpiped.node.NodeUtil.MULTICAST_ADDRESS;
+import static ringp2p.node.NodeUtil.FILE_BUFFER_SIZE;
+import static ringp2p.node.NodeUtil.MULTICAST_ADDRESS;
+import static ringp2p.node.NodeUtil.MULTICAST_PORT;
 
 /**
  * Listens for new nodes wanting to join the ring.
@@ -25,11 +27,14 @@ public class ServerThread implements Runnable {
         // Gets receiver details
         listenForNewNodes();
         // Wait until blockstore actually has file information
-        synchronized (Node.blockStore.lock) {
+        synchronized (BlockStore.lock) {
             while (!Node.blockStore.isInitialised()) {
                 try {
+                    System.out.println("Waiting");
                     Node.blockStore.wait();
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    System.out.println("Wait for fileblock was interrupted.");
+                    System.out.println(e.getMessage());
                 }
             }
         }
@@ -37,6 +42,7 @@ public class ServerThread implements Runnable {
         try {
             distributeFile();
         } catch (IOException e) {
+            System.out.println("Error when trying to distribute file.");
             e.printStackTrace();
         }
     }
@@ -75,7 +81,7 @@ public class ServerThread implements Runnable {
             MulticastSocket socket = null;
             InetAddress group = null;
             byte[] dataBytes = new byte[FILE_BUFFER_SIZE];
-            socket = new MulticastSocket(4446);
+            socket = new MulticastSocket(MULTICAST_PORT);
             group = InetAddress.getByName(MULTICAST_ADDRESS);
             socket.joinGroup(group);
             // Listen for datagram from new node
@@ -86,10 +92,12 @@ public class ServerThread implements Runnable {
             DataInputStream dataInputStream = new DataInputStream(in);
             receivingNodeDetails = new ReceivingNodeDetails(
                     dataInputStream.readInt(),
-                    datagramPacket.getAddress().toString(),
+                    datagramPacket.getAddress().toString().replace("/", ""),
                     datagramPacket.getPort()
             );
+            System.out.println("Receiving node: "+ receivingNodeDetails.toString());
         } catch (IOException e) {
+            System.out.println("Error when listening for new nodes.");
             e.printStackTrace();
         }
     }

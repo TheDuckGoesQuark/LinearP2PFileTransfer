@@ -1,4 +1,4 @@
-package chord.unicastpiped.messages;
+package ringp2p.messages;
 
 import java.io.Serializable;
 
@@ -27,5 +27,10 @@ public class ReceivingNodeDetails implements Serializable {
 
     public int getPort() {
         return port;
+    }
+
+    @Override
+    public String toString() {
+        return "last block received: "+last_block_sent+"\nhost address: "+address+"\nport: "+port;
     }
 }
