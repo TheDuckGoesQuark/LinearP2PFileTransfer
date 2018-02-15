@@ -16,6 +16,7 @@ import static ringp2p.node.NodeMode.LISTENING;
 public class Initializer {
 
     public static Scanner sc;
+    public static boolean isLast;
 
     /**
      * Assumes node address is provided in arguments
@@ -27,6 +28,7 @@ public class Initializer {
         if (args.length > 0) {
             FileInputStream is = new FileInputStream(new File(args[0]));
             System.setIn(is);
+            if (args.length == 2) isLast = args[1].equals("isLast");
         }
         sc = new Scanner(System.in);
 

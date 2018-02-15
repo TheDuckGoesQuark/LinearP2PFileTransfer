@@ -1,5 +1,6 @@
 package ringp2p.node;
 
+import ringp2p.Initializer;
 import ringp2p.threads.ClientThread;
 import ringp2p.threads.ServerThread;
 import ringp2p.messages.ReceivingNodeDetails;
@@ -28,6 +29,7 @@ public class Node {
     public void start() throws ClassNotFoundException {
         Socket socket = null;
         ClientThread clientThread = null;
+        ServerThread serverThread = null;
         blockStore = new BlockStore();
 
         if (!isRoot) {
@@ -56,12 +58,15 @@ public class Node {
             }
         }
         // init thread for sending data
-        ServerThread serverThread = new ServerThread();
-        serverThread.start();
+        if (Initializer.isLast) {
+            serverThread = new ServerThread();
+            serverThread.start();
+        }
 
+        // end once all operations complete
         try {
             if (clientThread != null) clientThread.join();
-            serverThread.join();
+            if (serverThread != null) serverThread.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
