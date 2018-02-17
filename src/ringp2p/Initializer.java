@@ -7,6 +7,7 @@ import ringp2p.node.NodeUtil;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
@@ -42,8 +43,6 @@ public class Initializer {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-
-        System.out.println("Exiting.");
     }
 
     private static String getFilePath(NodeMode nodeMode) {

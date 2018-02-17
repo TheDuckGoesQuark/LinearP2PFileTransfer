@@ -7,6 +7,7 @@ import ringp2p.messages.ReceivingNodeDetails;
 
 import java.io.*;
 import java.net.*;
+import java.util.Enumeration;
 
 import static ringp2p.node.NodeUtil.MULTICAST_ADDRESS;
 import static ringp2p.node.NodeUtil.MULTICAST_PORT;
@@ -34,71 +35,122 @@ public class Node {
 
         if (!isRoot) {
             // Repeat requests until sender found
-            while (socket == null) {
-                socket = discoverSender();
-            }
+            if ((socket = discoverSender()) == null) return;
+
             // thread for receiving data
-            try {
-                clientThread = new ClientThread(socket, filePath);
-                clientThread.start();
-            } catch (IOException e) {
-                System.out.println("Failure when running client thread.");
-                System.out.println(e.getMessage());
-            }
+            clientThread = new ClientThread(socket, filePath);
+            clientThread.start();
         } else {
-            // init blockstore with file details.
-            synchronized (BlockStore.lock) {
-                try {
+            try {
+                synchronized (BlockStore.lock) {
                     blockStore = initBlockstore();
                     BlockStore.lock.notifyAll();
-                } catch (IOException e) {
-                    System.out.println("Failure when initialising blockstore.");
-                    System.out.println(e.getMessage());
                 }
+            } catch (IOException e) {
+                System.out.println("Failed to retrieve file to distribute.");
+                e.printStackTrace();
+                return;
             }
         }
+
         // init thread for sending data
-        if (Initializer.isLast) {
+        if (!Initializer.isLast) {
             serverThread = new ServerThread();
             serverThread.start();
         }
 
         // end once all operations complete
         try {
-            if (clientThread != null) clientThread.join();
+            if (clientThread != null) {
+                clientThread.join();
+                socket.close();
+            }
             if (serverThread != null) serverThread.join();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | IOException e) {
             e.printStackTrace();
         }
+
+        System.out.println("Exiting.");
+    }
+
+    private String getHostAddress() throws SocketException {
+        String interfaceName = "enp2s0";
+        NetworkInterface networkInterface = NetworkInterface.getByName(interfaceName);
+        Enumeration<InetAddress> inetAddress = networkInterface.getInetAddresses();
+        InetAddress currentAddress;
+        currentAddress = inetAddress.nextElement();
+        while(inetAddress.hasMoreElements()) {
+            currentAddress = inetAddress.nextElement();
+            if(currentAddress instanceof Inet4Address && !currentAddress.isLoopbackAddress()) {
+                return currentAddress.toString().replace("/", "");
+            }
+        }
+        throw new SocketException();
     }
 
     private Socket discoverSender() {
         Socket socket = null;
         try {
+            receivingNodeDetails.setAddress(getHostAddress());
+        } catch (SocketException e) {
+            System.out.println("Failed to read machines address.");
+            return null;
+        }
+        receivingNodeDetails.setPort(UNICAST_PORT);
+
+        while (socket == null) {
+            broadcastDetails();
+            try {
+                socket = listenForSender(receivingNodeDetails.getPort());
+            } catch (IOException e) {
+                // Increment until a port is successful
+                if (e instanceof SocketTimeoutException) System.out.println("Timed out, trying again...");
+                else {
+                    System.out.println("Port in use, trying the next one...");
+                    System.out.println(e.getMessage());
+
+                    receivingNodeDetails.setPort(receivingNodeDetails.getPort() + 1);
+                }
+            }
+        }
+
+        return socket;
+    }
+
+    private Socket listenForSender(int port) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(port);
+        serverSocket.setSoTimeout(1000);
+        try {
+            return serverSocket.accept();
+        } catch (IOException e) {
+            serverSocket.close();
+        }
+        return null;
+    }
+
+    private void broadcastDetails() {
+        ByteArrayOutputStream byteArrayOutputStream = null;
+        ObjectOutputStream objectOutputStream = null;
+        DatagramSocket socket = null;
+
+        try {
             // Convert info to bytes
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
-            dataOutputStream.writeInt(receivingNodeDetails.getLast_block_sent());
-            dataOutputStream.close();
+            byteArrayOutputStream = new ByteArrayOutputStream();
+            objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+            objectOutputStream.writeObject(receivingNodeDetails);
             // Send request to all nodes
-            DatagramSocket s = new DatagramSocket(MULTICAST_PORT);
+            socket = new DatagramSocket(MULTICAST_PORT);
             byte[] dataBytes = byteArrayOutputStream.toByteArray();
             DatagramPacket datagramPacket = new DatagramPacket(
                     dataBytes,
                     dataBytes.length,
                     InetAddress.getByName(MULTICAST_ADDRESS),
                     MULTICAST_PORT);
-            s.send(datagramPacket);
-            s.close();
-
-            // Listen for join from end of ring
-            ServerSocket serverSocket = new ServerSocket(UNICAST_PORT);
-            socket = serverSocket.accept();
-        } catch (Exception e) {
-            System.out.println("Failure when trying to join ring.");
-            System.out.println(e.getMessage());
+            socket.send(datagramPacket);
+        } catch (IOException ignored) {
+        } finally {
+            if (socket != null) socket.close();
         }
-        return socket;
     }
 
     private BlockStore initBlockstore() throws IOException {

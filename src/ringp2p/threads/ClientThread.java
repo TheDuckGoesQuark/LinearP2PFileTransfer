@@ -8,6 +8,7 @@ import ringp2p.messages.Message;
 import ringp2p.messages.MessageType;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 
 public class ClientThread extends Thread {
@@ -17,11 +18,11 @@ public class ClientThread extends Thread {
 
     /**
      * Constructor for all non-root nodes to receive nodes.
+     *
      * @param socket
      * @param saveLocation
-     * @throws IOException
      */
-    public ClientThread(Socket socket, String saveLocation) throws IOException {
+    public ClientThread(Socket socket, String saveLocation) {
         this.socket = socket;
         this.fileLocation = saveLocation;
     }
@@ -36,11 +37,15 @@ public class ClientThread extends Thread {
                 chooseAction(message);
             } while (Node.blockStore == null || !Node.blockStore.allFilesReceived());
             System.out.println("All blocks received.");
-            socket.close();
-
         } catch (IOException | ClassNotFoundException e) {
             System.out.println("Failure when trying to retrieve files.");
             e.printStackTrace();
+        } finally {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

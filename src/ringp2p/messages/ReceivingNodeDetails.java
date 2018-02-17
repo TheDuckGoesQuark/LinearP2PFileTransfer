@@ -25,12 +25,22 @@ public class ReceivingNodeDetails implements Serializable {
         return address;
     }
 
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
     public int getPort() {
         return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 
     @Override
     public String toString() {
         return "last block received: "+last_block_sent+"\nhost address: "+address+"\nport: "+port;
     }
+
+
 }
