@@ -85,7 +85,7 @@ public class Node {
                 return currentAddress.toString().replace("/", "");
             }
         }
-        throw new SocketException();
+        return currentAddress.toString().replace("/", "");
     }
 
     private Socket discoverSender() {
