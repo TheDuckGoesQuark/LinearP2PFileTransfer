@@ -11,44 +11,19 @@ start=$SECONDS
 ssh -tt jm354@pc5-001-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_root.sh &
 ssh -tt jm354@pc5-002-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_non_root.sh &
 ssh -tt jm354@pc5-003-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_non_root.sh &
-sleep 0.5
+sleep 10 # Avoids final node ending chain early
 ssh -tt jm354@pc5-011-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_last_node.sh &
-
-# ssh -tt jm354@pc5-002-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_non_root.sh &
-#sleep 0.5
-#ssh -tt jm354@pc5-003-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_non_root.sh &
-#sleep 0.5
-#ssh -tt jm354@pc5-004-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_non_root.sh &
-#sleep 0.5
-#ssh -tt jm354@pc5-012-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_non_root.sh &
-#sleep 0.5
-#ssh -tt jm354@pc5-020-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_non_root.sh &
-
-#ssh -tt jm354@pc5-019-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/run_last_node.sh &
-
 duration=$(($SECONDS - start))
+
+## Print results
+sleep 15
+echo "";
+ssh pc5-002-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/cawiki-20140129-stub-articles.xml" && echo "002 found" || echo "002 not found"
+ssh pc5-003-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/cawiki-20140129-stub-articles.xml" && echo "003 found" || echo "003 not found"
+ssh pc5-011-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/cawiki-20140129-stub-articles.xml" && echo "011 found" || echo "011 not found"
 echo ${duration}
-
-
-sleep 3
 echo "";
-ssh pc5-002-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/pg44823.txt" && echo "002 found" || echo "002 not found"
-ssh pc5-003-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/pg44823.txt" && echo "003 found" || echo "003 not found"
-ssh pc5-011-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/pg44823.txt" && echo "011 found" || echo "011 not found"
-#ssh pc5-003-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/pg44823.txt" && echo found || echo not found
-#ssh pc5-004-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/pg44823.txt" && echo found || echo not found
-#ssh pc5-012-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/pg44823.txt" && echo found || echo not found
-#ssh pc5-020-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/pg44823.txt" && echo found || echo not found
-#ssh pc5-019-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/pg44823.txt" && echo found || echo not found
-
-echo "";
-ssh -tt jm354@pc5-002-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/pg44823.txt' &
-ssh -tt jm354@pc5-003-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/pg44823.txt' &
-ssh -tt jm354@pc5-011-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/pg44823.txt' &
-
-#ssh -tt jm354@pc5-002-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/pg44823.txt' &
-#ssh -tt jm354@pc5-004-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/pg44823.txt' &
-#ssh -tt jm354@pc5-012-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/pg44823.txt' &
-#ssh -tt jm354@pc5-020-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/pg44823.txt' &
-#ssh -tt jm354@pc5-019-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/pg44823.txt' &
+ssh -tt jm354@pc5-002-l.cs.st-andrews.ac.uk 'rm /cs/scratch/cawiki-20140129-stub-articles.xml' &
+ssh -tt jm354@pc5-003-l.cs.st-andrews.ac.uk 'rm /cs/scratch/cawiki-20140129-stub-articles.xml' &
+ssh -tt jm354@pc5-011-l.cs.st-andrews.ac.uk 'rm /cs/scratch/cawiki-20140129-stub-articles.xml' &
 exit
