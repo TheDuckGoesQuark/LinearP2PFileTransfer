@@ -3,47 +3,71 @@ cd /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src
 find . -name "*.class" -exec rm -f {} \;
 javac ringp2p/Initializer.java
 
-eval `ssh-agent`
+root="jm354@pc2-009-l.cs.st-andrews.ac.uk"
+end="jm354@pc2-063-l.cs.st-andrews.ac.uk"
+declare -a arr=(
+"jm354@pc2-105-l.cs.st-andrews.ac.uk"
+"jm354@pc2-075-l.cs.st-andrews.ac.uk"
+"jm354@pc2-067-l.cs.st-andrews.ac.uk"
+"jm354@pc2-025-l.cs.st-andrews.ac.uk"
+"jm354@pc2-112-l.cs.st-andrews.ac.uk"
+"jm354@pc2-099-l.cs.st-andrews.ac.uk"
+"jm354@pc2-009-l.cs.st-andrews.ac.uk"
+"jm354@pc2-085-l.cs.st-andrews.ac.uk"
+)
 
+eval `ssh-agent`
 ssh-add ~/.ssh/id_rsa
 
-start=$SECONDS
-ssh -tt jm354@pc5-001-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_root.sh &
-ssh -tt jm354@pc5-002-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_non_root.sh &
-ssh -tt jm354@pc5-003-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_non_root.sh &
-ssh -tt jm354@pc5-004-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_non_root.sh &
-ssh -tt jm354@pc5-005-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_non_root.sh &
-ssh -tt jm354@pc5-007-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_non_root.sh &
-ssh -tt jm354@pc5-009-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_non_root.sh &
-ssh -tt jm354@pc5-010-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_non_root.sh &
-ssh -tt jm354@pc5-012-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_non_root.sh &
+# Begin timer
+res1=$(date +%s.%N)
 
-sleep 15 # Avoids final node ending chain early
-ssh -tt jm354@pc5-011-l.cs.st-andrews.ac.uk 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_last_node.sh &
-duration=$(($SECONDS - start))
+# Run root node
+ssh ${root} 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_root.sh 2> /dev/null &
+
+# Run middle nodes
+for i in "${arr[@]}"
+do
+    echo "${i} is started"
+    ssh ${i} 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_non_root.sh 2> /dev/null &
+done
+
+# Keep checking for all files being received
+echo ""
+for i in "${arr[@]}"
+do
+  while true; do
+    str=`ssh ${i} test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "$i found" || echo "$i not found"`
+    echo Output: $str
+    if [[ ! $str =~ "not" ]]; then
+      break
+    fi
+  done
+done
+
+## Get runtime
+res2=$(date +%s.%N)
+dt=$(echo "$res2 - $res1" | bc)
+dd=$(echo "$dt/86400" | bc)
+dt2=$(echo "$dt-86400*$dd" | bc)
+dh=$(echo "$dt2/3600" | bc)
+dt3=$(echo "$dt2-3600*$dh" | bc)
+dm=$(echo "$dt3/60" | bc)
+ds=$(echo "$dt3-60*$dm" | bc)
+
+# run last node
+ssh ${end} 'bash -s' < /cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/src/scripts/run_last_node.sh & 2> /dev/null &
+
+printf "Total runtime: %d:%02d:%02d:%02.4f\n" $dd $dh $dm $ds
 
 ## Print results
-sleep 25
-echo "";
-ssh pc5-002-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "002 found" || echo "002 not found"
-ssh pc5-003-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "003 found" || echo "003 not found"
-ssh pc5-004-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "004 found" || echo "004 not found"
-ssh pc5-005-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "005 found" || echo "005 not found"
-ssh pc5-007-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "007 found" || echo "007 not found"
-ssh pc5-009-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "009 found" || echo "009 not found"
-ssh pc5-010-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "010 found" || echo "010 not found"
-ssh pc5-011-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "011 found" || echo "011 not found"
-ssh pc5-012-l.cs.st-andrews.ac.uk test -f "/cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4" && echo "012 found" || echo "012 not found"
+sleep 10
 
-echo ${duration}
+
+## Cleanup
+for i in "${arr[@]}"
+do
+    ssh -tt ${i} 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
+done
 echo "";
-ssh -tt jm354@pc5-002-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
-ssh -tt jm354@pc5-003-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
-ssh -tt jm354@pc5-004-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
-ssh -tt jm354@pc5-005-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
-ssh -tt jm354@pc5-011-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
-ssh -tt jm354@pc5-007-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
-ssh -tt jm354@pc5-012-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
-ssh -tt jm354@pc5-009-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
-ssh -tt jm354@pc5-011-l.cs.st-andrews.ac.uk 'rm /cs/scratch/jm354/TheFastandtheFuriousJohnIreland1954goofyrip_512kb.mp4' &
 exit

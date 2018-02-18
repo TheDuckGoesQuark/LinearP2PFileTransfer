@@ -74,9 +74,7 @@ public class Node {
     }
 
     private String getHostAddress() throws SocketException {
-        String interfaceName = "enp2s0";
-        NetworkInterface networkInterface = NetworkInterface.getByName(interfaceName);
-        Enumeration<InetAddress> inetAddress = networkInterface.getInetAddresses();
+        Enumeration<InetAddress> inetAddress = getValidInterface();
         InetAddress currentAddress;
         currentAddress = inetAddress.nextElement();
         while(inetAddress.hasMoreElements()) {
@@ -86,6 +84,21 @@ public class Node {
             }
         }
         return currentAddress.toString().replace("/", "");
+    }
+
+    private Enumeration<InetAddress> getValidInterface() throws SocketException {
+        final String[] interfaceNames = {"enp2s0", "enp3s0", "enp4s0"};
+        int interfaceIndex = 0;
+        NetworkInterface networkInterface = null;
+        Enumeration<InetAddress> inetAddress = null;
+        while(interfaceIndex < interfaceNames.length && networkInterface == null) {
+            networkInterface = NetworkInterface.getByName(interfaceNames[interfaceIndex]);
+            try {
+                inetAddress = networkInterface.getInetAddresses();
+            } catch (NullPointerException e) {interfaceIndex++;}
+        }
+        if (inetAddress == null) throw new SocketException();
+        return inetAddress;
     }
 
     private Socket discoverSender() {
