@@ -32,13 +32,12 @@ ssh-add ~/.ssh/id_rsa
 res1=$(date +%s.%N)
 
 # Run root node
-ssh ${root} "${rootScript} ${localfile}" "${#arr[@]}" &
+ssh ${root} "${rootScript} ${localfile} ${#arr[@]} > /dev/null 2>&1" &
 
 # Run nodes
 for i in "${arr[@]}"
 do
-    echo "${i} is started"
-    ssh ${i} "${nonRootScript} ${remotepath}" &
+    ssh ${i} "${nonRootScript} ${remotepath} > /dev/null 2>&1" &
 done
 
 # Compare checksum of remote and origin files
@@ -46,7 +45,7 @@ echo ""
 for i in "${arr[@]}"
 do
   while true; do
-    val=`ssh ${i} "cksum ${remotefile} | grep -o '^\S*'"`
+    val=`ssh ${i} "[ -f ${remotefile} ] && cksum ${remotefile} | grep -o '^\S*'"`
     if [[ "${checksum}" == "${val}" ]]; then
       break
     fi
@@ -54,7 +53,7 @@ do
   done
 done
 
-## Get runtime
+## Get runtime accurately
 res2=$(date +%s.%N)
 dt=$(echo "$res2 - $res1" | bc)
 dd=$(echo "$dt/86400" | bc)
@@ -64,9 +63,8 @@ dt3=$(echo "$dt2-3600*$dh" | bc)
 dm=$(echo "$dt3/60" | bc)
 ds=$(echo "$dt3-60*$dm" | bc)
 
-printf "Total runtime: %d:%02d:%02d:%02.4f\n" ${dd} ${dh} ${dm} ${ds}
+printf "Runtime: %d:%02d:%02d:%02.4f\n" ${dd} ${dh} ${dm} ${ds}
 
-/cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/test/scripts/cleanup.sh "${arr[@]}" ${remotefile}
+/cs/home/jm354/Documents/ThirdYear/Networking/FileTransfer/test/scripts/cleanup.sh "${arr[@]}" ${remotefile} > /dev/null 2>&1
 
-for pid in $(ps -ef | grep "ssh-agent" | awk '{print $2}'); do kill -9 ${pid}; done
 exit

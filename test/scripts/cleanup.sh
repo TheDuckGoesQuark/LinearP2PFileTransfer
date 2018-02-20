@@ -12,7 +12,7 @@ echo "Cleanup"
 
 for i in "${arr[@]}"
 do
-    ssh ${i} "${rmfile}"
+    ssh ${i} "${rmfile}" > /dev/null 2>&1
 done
 echo "";
 exit
