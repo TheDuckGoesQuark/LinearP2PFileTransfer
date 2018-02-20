@@ -1,11 +1,8 @@
 package ringp2p.threads;
 
-import ringp2p.messages.FileBlock;
-import ringp2p.messages.FileDetails;
+import ringp2p.messages.*;
 import ringp2p.node.BlockStore;
 import ringp2p.node.Node;
-import ringp2p.messages.Message;
-import ringp2p.messages.MessageType;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -15,9 +12,10 @@ public class ClientThread extends Thread {
 
     private Socket socket;
     private String fileLocation;
+    private ObjectInputStream is;
 
     /**
-     * Constructor for all non-root nodes to receive nodes.
+     * Constructor for all non-root nodes to receive file blocks.
      *
      * @param socket
      * @param saveLocation
@@ -27,11 +25,28 @@ public class ClientThread extends Thread {
         this.fileLocation = saveLocation;
     }
 
+    public int getChainLength() {
+        try {
+            Message message;
+            is = new ObjectInputStream(socket.getInputStream());
+            message = (Message) is.readObject();
+            return ((ChainDetails) Message.deserialize(message.getData())).getLeftInChain();
+        } catch (IOException | ClassNotFoundException e) {
+            try {
+                socket.close();
+            } catch (IOException f) {
+                f.printStackTrace();
+            }
+        }
+
+        return 0;
+    }
+
     @Override
     public void run() {
         Message message;
         try {
-            ObjectInputStream is = new ObjectInputStream(socket.getInputStream());
+            if (is == null) is = new ObjectInputStream(socket.getInputStream());
             do {
                 message = (Message) is.readObject();
                 chooseAction(message);

@@ -15,7 +15,10 @@ import static ringp2p.node.NodeUtil.*;
  */
 public class ServerThread extends Thread {
 
-    public ServerThread() {
+    private int leftInChain;
+
+    public ServerThread(int leftInChain) {
+        this.leftInChain = leftInChain;
     }
 
     @Override
@@ -23,9 +26,10 @@ public class ServerThread extends Thread {
         waitForBlockStore();
         boolean successful = false;
         while (!successful) {
-            ReceivingNodeDetails receivingNodeDetails = getReceivingNodeDetails();
+            RequestingNodeDetails requestingNodeDetails = getRequestingNodeDetails();
+            if (requestingNodeDetails == null) continue;
             try {
-                distributeFile(receivingNodeDetails);
+                distributeFile(requestingNodeDetails);
                 successful = true;
             } catch (IOException e) {
                 System.out.println("Error when trying to distribute file. Trying again");
@@ -46,41 +50,49 @@ public class ServerThread extends Thread {
         }
     }
 
-    private void distributeFile(ReceivingNodeDetails receivingNodeDetails) throws IOException {
-        // Init socket
-        Socket socket = new Socket(receivingNodeDetails.getAddress(), receivingNodeDetails.getPort());
-        OutputStream out = socket.getOutputStream();
-        // send file meta data
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
-        Message message = new Message(MessageType.FILE_DETAILS_MESSAGE, new FileDetails(Node.blockStore.getFileLength(), Node.blockStore.getFileName()));
-        objectOutputStream.writeObject(message);
+    private void distributeFile(RequestingNodeDetails requestingNodeDetails) throws IOException {
+        Socket socket = null;
+        try {
+            // Init socket
+            socket = new Socket(requestingNodeDetails.getAddress(), requestingNodeDetails.getPort());
+            OutputStream out = socket.getOutputStream();
+            // send file meta data
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
+            Message chainDetailsMessage = new Message(MessageType.CHAIN_DETAILS_MESSAGE, new ChainDetails(leftInChain));
+            Message fileDetailsMessage = new Message(MessageType.FILE_DETAILS_MESSAGE, new FileDetails(Node.blockStore.getFileLength(), Node.blockStore.getFileName()));
+            objectOutputStream.writeObject(chainDetailsMessage);
+            objectOutputStream.writeObject(fileDetailsMessage);
 
-        // send the file contents
-        for (int i = receivingNodeDetails.getLast_block_sent() + 1; i < Node.blockStore.getExpectedNumberOfBlocks(); i++) {
-            byte[] file_data = new byte[FILE_BUFFER_SIZE];
-            boolean file_retrieved = false;
-            while (!file_retrieved) {
-                try {
-                    Node.blockStore.getBlock(i, file_data);
-                    file_retrieved = true;
-                } catch (InterruptedException ignored) {
+            // send the file contents
+            for (int i = requestingNodeDetails.getLast_block_sent() + 1; i < Node.blockStore.getExpectedNumberOfBlocks(); i++) {
+                byte[] file_data = new byte[FILE_BUFFER_SIZE];
+                boolean file_retrieved = false;
+                while (!file_retrieved) {
+                    try {
+                        Node.blockStore.getBlock(i, file_data);
+                        file_retrieved = true;
+                    } catch (InterruptedException ignored) {
+                    }
                 }
+                Message file_block = new Message(MessageType.FILE_BLOCK_MESSAGE, new FileBlock(i, file_data));
+                objectOutputStream.writeObject(file_block);
             }
-            Message file_block = new Message(MessageType.FILE_BLOCK_MESSAGE, new FileBlock(i, file_data));
-            objectOutputStream.writeObject(file_block);
+        } finally {
+            if (socket != null) {
+                socket.shutdownOutput();
+                socket.close();
+            }
         }
-
-        socket.shutdownOutput();
-        socket.close();
     }
 
-    private ReceivingNodeDetails getReceivingNodeDetails() {
-        ReceivingNodeDetails receivingNodeDetails = null;
+    private RequestingNodeDetails getRequestingNodeDetails() {
+        RequestingNodeDetails requestingNodeDetails = null;
         MulticastSocket socket = null;
         InetAddress group;
         byte[] dataBytes = new byte[FILE_BUFFER_SIZE];
 
         try {
+            System.out.println("Listening for connection");
             socket = new MulticastSocket(MULTICAST_PORT);
             group = InetAddress.getByName(MULTICAST_ADDRESS);
             socket.joinGroup(group);
@@ -90,13 +102,13 @@ public class ServerThread extends Thread {
             byte[] data = datagramPacket.getData();
             ByteArrayInputStream in = new ByteArrayInputStream(data);
             ObjectInputStream objectInputStream = new ObjectInputStream(in);
-            receivingNodeDetails = (ReceivingNodeDetails) objectInputStream.readObject();
+            requestingNodeDetails = (RequestingNodeDetails) objectInputStream.readObject();
         } catch (IOException | ClassNotFoundException e) {
             System.out.println("Error when listening for new nodes.");
             e.printStackTrace();
         } finally {
             if (socket != null) socket.close();
         }
-        return receivingNodeDetails;
+        return requestingNodeDetails;
     }
 }

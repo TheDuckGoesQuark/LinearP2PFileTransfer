@@ -2,18 +2,18 @@ package ringp2p.messages;
 
 import java.io.Serializable;
 
-public class ReceivingNodeDetails implements Serializable {
+public class RequestingNodeDetails implements Serializable {
     private int last_block_sent;
     private String address;
     private int port;
 
-    public ReceivingNodeDetails(int last_block_sent, String address, int port) {
+    public RequestingNodeDetails(int last_block_sent, String address, int port) {
         this.last_block_sent = last_block_sent;
         this.address = address;
         this.port = port;
     }
 
-    public ReceivingNodeDetails(int last_block_sent) {
+    public RequestingNodeDetails(int last_block_sent) {
         this.last_block_sent = last_block_sent;
     }
 

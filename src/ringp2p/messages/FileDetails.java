@@ -2,8 +2,7 @@ package ringp2p.messages;
 
 import java.io.Serializable;
 
-public class FileDetails implements Serializable
-{
+public class FileDetails implements Serializable {
     private long fileLength;
     private String filename;
 
@@ -27,4 +26,5 @@ public class FileDetails implements Serializable
     public void setFilename(String filename) {
         this.filename = filename;
     }
+
 }
